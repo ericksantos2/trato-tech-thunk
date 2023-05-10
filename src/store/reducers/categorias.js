@@ -8,6 +8,9 @@ const { toast } = createStandaloneToast();
 const initialState = [];
 
 export const carregarCategorias = createAction('categorias/carregarCategorias');
+export const carregarUmaCategoria = createAction(
+  'categorias/carregarUmaCategoria'
+);
 
 export const buscarCategorias = createAsyncThunk(
   'categorias/buscar',
@@ -18,22 +21,25 @@ const categoriasSlice = createSlice({
   name: 'categorias',
   initialState,
   reducers: {
-    adicionarTodasAsCategorias: (state, { payload }) => payload,
+    adicionarTodasAsCategorias: (_, { payload }) => payload,
+    adicionarUmaCategoria: (state, { payload }) => {
+      state.push(payload);
+    },
   },
   extraReducers: (builder) => {
-    builder
-      .addCase(resetarCarrinho.type, () => {
-        toast({
-          title: 'Sucesso!',
-          description: 'Compra completada com sucesso!',
-          status: 'success',
-          duration: 2000,
-          isClosable: true,
-        });
+    builder.addCase(resetarCarrinho.type, () => {
+      toast({
+        title: 'Sucesso!',
+        description: 'Compra completada com sucesso!',
+        status: 'success',
+        duration: 2000,
+        isClosable: true,
       });
+    });
   },
 });
 
-export const { adicionarTodasAsCategorias } = categoriasSlice.actions;
+export const { adicionarTodasAsCategorias, adicionarUmaCategoria } =
+  categoriasSlice.actions;
 
 export default categoriasSlice.reducer;
