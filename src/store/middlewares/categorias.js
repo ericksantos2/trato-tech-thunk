@@ -1,49 +1,53 @@
-import { createStandaloneToast } from '@chakra-ui/toast';
 import { createListenerMiddleware } from '@reduxjs/toolkit';
 import categoriasService from 'services/categorias';
 import {
   adicionarTodasAsCategorias,
+  adicionarUmaCategoria,
   carregarCategorias,
+  carregarUmaCategoria,
 } from 'store/reducers/categorias';
+import criarTarefa from './utils/criarTarefa';
 
-export const listener = createListenerMiddleware();
-const { toast } = createStandaloneToast();
+export const categoriasListener = createListenerMiddleware();
 
-listener.startListening({
+categoriasListener.startListening({
   actionCreator: carregarCategorias,
-  effect: async (action, { dispatch, fork, unsubscribe }) => {
-    toast({
-      title: 'Carregando',
-      description: 'Carregando categorias',
-      status: 'loading',
-      duration: 2000,
-      isClosable: true,
+  effect: async (_, { dispatch, fork, unsubscribe }) => {
+    const resposta = await criarTarefa({
+      fork,
+      dispatch,
+      action: adicionarTodasAsCategorias,
+      busca: categoriasService.buscar,
+      textoCarregando: 'Carregando categorias',
+      textoSucesso: 'Categorias carregadas com sucesso!',
+      textoErro: 'Erro na busca de categorias',
     });
-    const tarefa = fork(async (api) => {
-      await api.delay(500);
-      return await categoriasService.buscar();
-    });
-
-    const resposta = await tarefa.result;
-
     if (resposta.status === 'ok') {
-      dispatch(adicionarTodasAsCategorias(resposta.value));
-      toast({
-        title: 'Sucesso!',
-        description: 'Categorias carregadas com sucesso!',
-        status: 'success',
-        duration: 2000,
-        isClosable: true,
-      });
       unsubscribe();
-    } else if (resposta.status === 'rejected') {
-      toast({
-        title: 'Erro',
-        description: 'Erro na busca de categorias',
-        status: 'error',
-        duration: 2000,
-        isClosable: true,
-      });
     }
+  },
+});
+
+categoriasListener.startListening({
+  actionCreator: carregarUmaCategoria,
+  effect: async (action, { dispatch, fork, getState, unsubscribe }) => {
+    const { categorias } = getState();
+    const nomeCategoria = action.payload;
+    const categoriaCarregada = categorias.some(
+      (categoria) => categoria.id === nomeCategoria
+    );
+
+    if (categoriaCarregada) return;
+    if (categorias.length === 5) return unsubscribe();
+
+    await criarTarefa({
+      fork,
+      dispatch,
+      action: adicionarUmaCategoria,
+      busca: () => categoriasService.buscarUmaCategoria(nomeCategoria),
+      textoCarregando: `Carregando a categoria ${nomeCategoria}`,
+      textoSucesso: `Categoria ${nomeCategoria} carregada com sucesso!`,
+      textoErro: `Erro na busca da categoria ${nomeCategoria}`,
+    });
   },
 });
